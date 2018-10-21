@@ -21,6 +21,40 @@ function createMatrix(w, h) {
     return matrix;
 }
 
+function createPiece(type) {
+    if (type === 'T') {
+        return [
+            [0, 0 ,0],
+            [1, 1, 1],
+            [0, 1, 0],
+        ];
+    } else if (type === 'O') {
+        return [
+            [1, 1],
+            [1, 1],
+        ]
+    } else if (type === 'L') {
+        return [
+            [0, 1 ,0],
+            [0, 1, 0],
+            [1, 1, 0],
+        ]
+    } else if (type === 'S') {
+        return [
+            [0, 1 ,1],
+            [1, 1, 0],
+            [0, 0, 0],
+        ]
+    } else if (type === 'I') {
+        return [
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+            [0, 1, 0, 0],
+        ]
+    }
+}
+
 function draw() {
     //need to redraw the canvas so that old sprite paths are removed
     context.fillStyle = '#000';
@@ -72,6 +106,7 @@ function playerDrop() {
         player.pos.y--;
         //calling merge function which merges the current player pos into the arena matrix grid(viewed with console.table(arena))
         merge(arena,player)
+        playerReset() //GET NEW PIECE RANDOM FUNCTION
         //reset player back to top
         player.pos.y = 0;
     }
@@ -83,6 +118,31 @@ function playerMove(dir){
     player.pos.x += dir;
     if(collide(arena, player)) {
         player.pos.x -= dir
+    }
+}
+function playerReset() {
+    const pieces = 'ILOTS';
+    player.matrix = createPiece(pieces[pieces.length * Math.random() | 0])
+    player.pos.y = 0;
+    // notation | means FLOORED
+    player.pos.x = (arena[0].length / 2 | 0) -
+                    (player.matrix[0].length / 2 | 0)
+}
+//when there is a rotation INTO the wall, it needs to offset back either -1 or +1 based on which side
+function playerRotate(dir) {
+    const pos = player.pos.x;
+    let offset = 1;
+    rotate(player.matrix, dir)
+    while(collide(arena, player)) {
+        //we try +1 to the right aka assuming we went off screen from the left side, HOWEVER
+        //if we are wrong, then we went off right side and now we are off by 2!!!! So offset will be equal to flipped 2 (+/-)
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if(offset > player.matrix[0].length) {
+            rotate(player.matrix, -dir);
+            player.pos.x = pos;
+            return;
+        }
     }
 }
 // flipped basically
@@ -97,6 +157,11 @@ function rotate(matrix, dir) {
                 matrix[x][y],
             ];
         }
+    }
+    if (dir > 0) {
+        matrix.forEach(row => row.reverse());
+    } else {
+        matrix.reverse();
     }
 }
 let dropCounter = 0;
@@ -123,18 +188,24 @@ const arena = createMatrix(16,26)
 //easiest to keep track of player this way
 const player = {
     pos: {x: 5, y: 5},
-    matrix: matrix
+    matrix: createPiece('T')
 }
 //keyboard controls
 document.addEventListener('keydown', event => {
     if(event.code === "ArrowLeft"){
         playerMove(-1)
     }
-    if(event.code === "ArrowRight"){
+    else if(event.code === "ArrowRight"){
         playerMove(+1)
     }
-    if(event.code === "ArrowDown"){
+    else if(event.code === "ArrowDown"){
         playerDrop();
+    }
+    else if(event.keyCode === 81){
+        playerRotate(-1);
+    }
+    else if(event.keyCode === 87){
+        playerRotate(+1);
     }
 })
 
