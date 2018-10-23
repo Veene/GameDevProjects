@@ -30,27 +30,27 @@ function createPiece(type) {
         ];
     } else if (type === 'O') {
         return [
-            [1, 1],
-            [1, 1],
+            [2, 2],
+            [2, 2],
         ]
     } else if (type === 'L') {
         return [
-            [0, 1 ,0],
-            [0, 1, 0],
-            [1, 1, 0],
+            [0, 3 ,0],
+            [0, 3, 0],
+            [3, 3, 0],
         ]
     } else if (type === 'S') {
         return [
-            [0, 1 ,1],
-            [1, 1, 0],
+            [0, 4 ,4],
+            [4, 4, 0],
             [0, 0, 0],
         ]
     } else if (type === 'I') {
         return [
-            [0, 1, 0, 0],
-            [0, 1, 0, 0],
-            [0, 1, 0, 0],
-            [0, 1, 0, 0],
+            [0, 5, 0, 0],
+            [0, 5, 0, 0],
+            [0, 5, 0, 0],
+            [0, 5, 0, 0],
         ]
     }
 }
@@ -63,13 +63,22 @@ function draw() {
     drawMatrix(arena, {x: 0, y: 0})
     drawMatrix(player.matrix, player.pos)
 }
+const colors = [
+    null,
+    '#FF0D72',
+    '#0DC2FF',
+    '#0DFF72',
+    '#F538FF',
+    '#FF8E0D',
+    '#3877FF',
+]
 
 // will draw tiles using the matrix + x and y positions
 function drawMatrix(matrix, offset) {
     matrix.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value !== 0) {
-                context.fillStyle = 'red';
+                context.fillStyle = colors[value];
                 context.fillRect(x + offset.x, y + offset.y, 1, 1)
             }
         })
@@ -85,6 +94,24 @@ function merge(arena, player) {
             }
         })
     })
+}
+//sweeps arena starting at bottom(max y), checks first X spot of bottom row, if at any point theres a 0, go to next row. It will only work if full row was 1s
+//which would mean that the continue outer was not called, and it went to fill(0) and unshift and change score.
+function arenaSweep() {
+    let rowCount = 1;
+    outer: for (let y = arena.length -1; y > 0; --y) {
+        for (let x  = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) {
+                continue outer;
+            }
+        }
+        const row = arena.splice(y, 1)[0].fill(0)
+        arena.unshift(row)
+        ++y;
+    
+        player.score += rowCount * 10;
+        rowCount *= 2;
+    }
 }
 function collide(arena, player) {
     const [m, o] = [player.matrix, player.pos];
@@ -107,8 +134,10 @@ function playerDrop() {
         //calling merge function which merges the current player pos into the arena matrix grid(viewed with console.table(arena))
         merge(arena,player)
         playerReset() //GET NEW PIECE RANDOM FUNCTION
+        arenaSweep()
+        updateScore();
         //reset player back to top
-        player.pos.y = 0;
+        // player.pos.y = 0;
     }
     //if we press down, we don't want it to double drop sometimes so reset to 0 to give a 1 sec buffer
     dropCounter = 0;
@@ -120,6 +149,7 @@ function playerMove(dir){
         player.pos.x -= dir
     }
 }
+//only called when player collides with another piece/ground, if collision right away again, it means they stacked on top, and time to wipe whole board
 function playerReset() {
     const pieces = 'ILOTS';
     player.matrix = createPiece(pieces[pieces.length * Math.random() | 0])
@@ -127,6 +157,11 @@ function playerReset() {
     // notation | means FLOORED
     player.pos.x = (arena[0].length / 2 | 0) -
                     (player.matrix[0].length / 2 | 0)
+    if(collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        player.score = 0;
+        updateScore();
+    }
 }
 //when there is a rotation INTO the wall, it needs to offset back either -1 or +1 based on which side
 function playerRotate(dir) {
@@ -182,13 +217,19 @@ function update(time = 0) {
     //requestAnimationFrame calls update from within update for infinite loop
     requestAnimationFrame(update);
 }
+
+function updateScore() {
+    document.getElementById('score').innerText = player.score;
+}
+
 //create the arena to log gamespace - check console.table to view
 const arena = createMatrix(16,26)
 // console.log(arena), console.table(arena)
 //easiest to keep track of player this way
 const player = {
-    pos: {x: 5, y: 5},
-    matrix: createPiece('T')
+    pos: {x: 0, y: 0},
+    matrix: null,
+    score: 0,
 }
 //keyboard controls
 document.addEventListener('keydown', event => {
@@ -209,4 +250,6 @@ document.addEventListener('keydown', event => {
     }
 })
 
+playerReset();
+updateScore();
 update();
