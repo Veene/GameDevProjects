@@ -29,4 +29,7 @@ export default class SpriteSheet {
         const buffer = this.tiles.get(name); //using the map that is storing k:v's and getting buffer.
         context.drawImage(buffer, x, y);
     }
+    drawTile(name, context, x, y) {
+        this.draw(name, context, x * this.width, y * this.height);
+    }
 }
