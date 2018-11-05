@@ -7,23 +7,26 @@ export default class SpriteSheet {
         this.height = height;
         this.tiles = new Map(); //using map to hold key,value pairs, in this case: name of tile and buffer.
     }
-    define(name, x, y) { //name the tile and where starting point is (topleft corner)
+    define(name, x, y, width, height) { //name the tile and where starting point is (topleft corner)
         const buffer = document.createElement('canvas');
-        buffer.width = this.width; //automatically tells you height and width which was invoke with new Spritesheet
-        buffer.height = this.height;
+        buffer.width = width
+        buffer.height = height
         buffer
             .getContext('2d')
             .drawImage(
                 this.image, 
-                x * this.width, //what column you want the item (x=0,1,2,3,4)
-                y * this.height, //what row you want the item (y=0, 1, 2, 3, 4)
-                this.width, 
-                this.height, 
+                x, //what column you want the item (x=0,1,2,3,4)
+                y, //what row you want the item (y=0, 1, 2, 3, 4)
+                width, 
+                height, 
                 0, 
                 0, 
-                this.width, 
-                this.height);
+                width, 
+                height);
         this.tiles.set(name, buffer); //set key value pair
+    }
+    defineTile(name, x, y) {
+        this.define(name, x * this.width, y*this.height, this.width, this.height)
     }
     draw(name, context, x, y) {
         const buffer = this.tiles.get(name); //using the map that is storing k:v's and getting buffer.
